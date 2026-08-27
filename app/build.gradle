@@ -1,0 +1,19 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.retroarchlauncher'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId 'com.example.retroarchlauncher'
+        minSdk 23
+        targetSdk 30
+        versionCode 1
+        versionName '1.0'
+    }
+}
+
+dependencies {
+}
