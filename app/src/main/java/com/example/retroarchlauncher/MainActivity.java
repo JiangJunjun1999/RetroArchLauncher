@@ -13,15 +13,16 @@ public class MainActivity extends Activity {
     private static final String RETROARCH_PACKAGE = "com.retroarch";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private boolean launching = false;
+
+    private boolean startingRetroArch = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 不再显示 "Starting RetroArch..."
-        // 直接启动 RetroArch，减少 Launcher 闪现
-        launchRetroArch();
+        showStatus("Starting RetroArch...");
+
+        handler.postDelayed(this::startRetroArch, 300);
     }
 
     @Override
@@ -30,44 +31,35 @@ public class MainActivity extends Activity {
 
         /*
          * 当 RetroArch 退出并返回 Launcher 时，
-         * 自动重新启动 RetroArch。
-         *
-         * 延迟 250ms 是为了避免 Android 在 Activity
-         * 切换过程中重复触发启动。
+         * 再次启动 RetroArch。
          */
-        if (!launching) {
-            handler.postDelayed(this::launchRetroArch, 250);
+        if (!startingRetroArch) {
+            handler.postDelayed(this::startRetroArch, 300);
         }
     }
 
-    private void launchRetroArch() {
+    private void startRetroArch() {
 
-        if (launching) {
+        if (startingRetroArch) {
             return;
         }
 
         Intent intent = getPackageManager()
                 .getLaunchIntentForPackage(RETROARCH_PACKAGE);
 
-        /*
-         * 如果没有安装 RetroArch，
-         * 显示提示信息。
-         */
         if (intent == null) {
-
-            launching = false;
 
             showStatus(
                     "RetroArch was not found.\n\n" +
                     "Please install RetroArch first.\n\n" +
-                    "Required package:\n" +
+                    "Package:\n" +
                     RETROARCH_PACKAGE
             );
 
             return;
         }
 
-        launching = true;
+        startingRetroArch = true;
 
         intent.addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK |
@@ -79,26 +71,23 @@ public class MainActivity extends Activity {
             startActivity(intent);
 
             /*
-             * 给 Android 一点时间完成 Activity 切换。
+             * 给 Android 一点时间切换到 RetroArch。
              */
             handler.postDelayed(() -> {
-                launching = false;
+                startingRetroArch = false;
             }, 1000);
 
         } catch (Exception e) {
 
-            launching = false;
+            startingRetroArch = false;
 
             showStatus(
-                    "Unable to start RetroArch."
+                    "Unable to start RetroArch.\n\n" +
+                    e.getMessage()
             );
         }
     }
 
-    /*
-     * 只有 RetroArch 没安装或者启动失败时，
-     * 才显示这个界面。
-     */
     private void showStatus(String text) {
 
         TextView view = new TextView(this);
@@ -124,18 +113,14 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
 
         /*
-         * 如果 Launcher 收到返回键，
-         * 重新启动 RetroArch。
+         * 按返回键时重新启动 RetroArch。
          */
-        launchRetroArch();
+        startRetroArch();
     }
 
     @Override
     protected void onDestroy() {
 
-        /*
-         * Activity 销毁时清理所有延迟任务。
-         */
         handler.removeCallbacksAndMessages(null);
 
         super.onDestroy();
